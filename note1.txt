@@ -1,0 +1,42 @@
+import express from "express";
+🔹 মানে:
+express ফ্রেমওয়ার্কটা কে আমদানি করছি।
+এটা Node.js দিয়ে সার্ভার তৈরি করার জন্য সবচেয়ে জনপ্রিয় ফ্রেমওয়ার্ক।
+এখন আমরা এর ভিতরের ফাংশনগুলো ব্যবহার করতে পারব।
+
+
+
+const router = express.Router();
+🔹 মানে:
+Express থেকে আমরা একটা Router object বানালাম।
+Router কাজ করে mini-server এর মতো।
+এই router দিয়ে আমরা বিভিন্ন path (যেমন /signup, /login) এর জন্য request handle করতে পারি।
+
+🧠 একটা সার্ভারে অনেক router থাকতে পারে — আলাদা আলাদা কাজ করার জন্য।
+
+
+router.get("/signup", (req, res) => {
+  res.send(" Sign Up Route Working!");
+});
+🔹 মানে:
+যখন কেউ ব্রাউজারে লিখবে:
+
+bash
+Copy
+Edit
+http://localhost:5000/api/auth/signup
+🔹 তখন:
+
+GET request আসবে /signup path এ।
+
+(req, res) মানে:
+
+req হলো ক্লায়েন্টের অনুরোধ (request)
+
+res হলো সার্ভারের উত্তর (response)
+
+res.send(...) দিয়ে আমরা একটা simple মেসেজ পাঠাচ্ছি ব্রাউজারে।
+
+js
+Copy
+Edit
