@@ -136,3 +136,52 @@ export const logout = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
+
+
+export const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'No refresh token found in cookies',
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+
+    const storedToken = await redis.get(`refresh_token:${decoded.id}`);
+
+    if (storedToken !== refreshToken) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, {
+      expiresIn: `${FOUR_MONTHS_IN_SECONDS}s`,
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: FOUR_MONTHS_IN_SECONDS * 1000,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Token refreshed successfully',
+      accessToken,
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
