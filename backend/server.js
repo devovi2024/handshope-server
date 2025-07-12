@@ -14,11 +14,13 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 
 const startServer = async () => {
+
   try {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}/api/auth`);
     });
+    
   } catch (error) {
     console.error("Failed to start server:", error.message);
   }
