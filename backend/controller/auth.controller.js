@@ -3,22 +3,25 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import redis from '../lib/redis.js';
 
-// Generate access and refresh JWT tokens with different expirations
+// 4 months in seconds 
+const FOUR_MONTHS_IN_SECONDS = 60 * 60 * 24 * 30 * 4; 
+
+// Generate access and refresh JWT tokens 
 const generateToken = (id) => {
   const accessToken = jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: `${FOUR_MONTHS_IN_SECONDS}s`,  
   });
 
   const refreshToken = jwt.sign({ id }, process.env.REFRESH_SECRET, {
-    expiresIn: "1d",
+    expiresIn: `${FOUR_MONTHS_IN_SECONDS}s`,  
   });
 
   return { accessToken, refreshToken };
 };
 
-// Store the refresh token in Redis with 1-day expiry
+// Store the refresh token in Redis with 4 months expiry
 const storeRefreshToken = async (userId, refreshToken) => {
-  await redis.set(`refresh_token:${userId}`, refreshToken, "EX", 60 * 60 * 24);
+  await redis.set(`refresh_token:${userId}`, refreshToken, "EX", FOUR_MONTHS_IN_SECONDS);
 };
 
 export const signup = async (req, res) => {
@@ -46,7 +49,7 @@ export const signup = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 1000 * 60 * 60 * 24,
+      maxAge: FOUR_MONTHS_IN_SECONDS * 1000, 
     });
 
     res.status(201).json({
@@ -73,6 +76,35 @@ export const login = async (req, res) => {
   res.send("Login Route Working!");
 };
 
+
 export const logout = async (req, res) => {
-  res.send("Logout Route Working!");
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "No refresh token found in cookies",
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+    await redis.del(`refresh_token:${decoded.id}`);
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout successful",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
 };
